@@ -1,0 +1,11 @@
+{
+  "codeowners": ["@pvginkel"],
+  "config_flow": false,
+  "dependencies": [],
+  "documentation": "https://github.com/pvginkel/dimmer_from_switches/",
+  "domain": "dimmer_from_switches",
+  "iot_class": "local_push",
+  "name": "Dimmer from Switches",
+  "requirements": [],
+  "version": "1.0.0"
+}
