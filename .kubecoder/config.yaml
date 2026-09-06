@@ -1,0 +1,25 @@
+# The KubeCoder environment for the Dimmer from Switches Home Assistant
+# custom component.
+#
+# Schema: https://kubecoder.home/help/reference/config-yaml/
+#
+# This repository stands alone: no sibling repos, no catalog services, no
+# secrets, no ports and no image to build. The pytest suite mocks Home
+# Assistant end to end, so a Python toolchain is the whole environment.
+
+capabilities:
+  github: rw
+
+tools:
+  # Python 3.13 with uv, Poetry and Ruff — runs the suite and the linter.
+  - use: python
+
+setup:
+  - kc project setup
+
+preamble:
+  instructions: |
+    This environment holds the Dimmer from Switches Home Assistant custom
+    component. Use `kc project setup` / `test` / `lint` rather than calling
+    pytest or ruff directly; they run inside the `python` tool sidecar
+    against the repo's own `.venv`. There is nothing to build.

@@ -1,0 +1,24 @@
+# Curated entry points for this repository.
+#
+# Schema: https://kubecoder.home/help/reference/project-yaml/
+#
+# One component: the repository is a single Home Assistant custom component
+# with one pytest suite driven by the root `setup.cfg`, so `root` owns the
+# whole gate. There is no `build:` — a HACS component ships as source, and
+# there is no Dockerfile or Jenkins job in this repo.
+
+projects:
+  root:
+    description: >-
+      Dimmer from Switches — a Home Assistant custom component that turns
+      wall-switch button events into dimmer control over MQTT. Tested with a
+      fully mocked pytest suite (pytest-homeassistant-custom-component); no
+      hardware and no services are involved.
+    setup:
+      # A repo-local .venv, so `kc project test` is reproducible from a fresh
+      # clone. requirements.test.txt pulls Home Assistant in via
+      # pytest-homeassistant-custom-component.
+      - cexec python uv venv --python 3.13
+      - cexec python uv pip install --requirements requirements.test.txt
+    test: cexec python .venv/bin/pytest
+    lint: cexec python ruff check .
