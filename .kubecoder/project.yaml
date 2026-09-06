@@ -17,8 +17,11 @@ projects:
     setup:
       # A repo-local .venv, so `kc project test` is reproducible from a fresh
       # clone. requirements.test.txt pulls Home Assistant in via
-      # pytest-homeassistant-custom-component.
-      - cexec python uv venv --python 3.13
-      - cexec python uv pip install --requirements requirements.test.txt
+      # pytest-homeassistant-custom-component; requirements.overrides.txt says
+      # why one of its transitive pins has to be lifted.
+      # --allow-existing keeps `setup` rerunnable: plain `uv venv` errors out
+      # when .venv is already there, and setup runs again on every pod restart.
+      - cexec python uv venv --python 3.13 --allow-existing
+      - cexec python uv pip install --overrides requirements.overrides.txt --requirements requirements.test.txt
     test: cexec python .venv/bin/pytest
     lint: cexec python ruff check .
