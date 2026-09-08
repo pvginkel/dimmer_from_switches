@@ -1,16 +1,16 @@
 from __future__ import annotations
-import asyncio, logging, json
-from .const import DOMAIN, ACTIONS, LOGGER, STORAGE_VERSION, STORAGE_KEY, PLATFORMS
-from homeassistant.core import HomeAssistant
-from homeassistant.const import EVENT_HOMEASSISTANT_START
-from homeassistant.helpers.discovery import async_load_platform
+
+import json
+
 from homeassistant.components import mqtt
+from homeassistant.const import EVENT_HOMEASSISTANT_START
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.discovery import async_load_platform
+from homeassistant.helpers.reload import async_integration_yaml_config
 from homeassistant.helpers.storage import Store
-from homeassistant.helpers.reload import (
-    async_setup_reload_service,
-    async_integration_yaml_config,
-    async_reload_integration_platforms,
-)
+
+from .const import ACTIONS, DOMAIN, LOGGER, STORAGE_KEY, STORAGE_VERSION
+
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     LOGGER.info("Starting up Dimmer from Switches")
@@ -47,7 +47,7 @@ async def _load_and_sync_devices(hass: HomeAssistant, config: dict):
     # Get previous known IDs.
 
     known_ids = set(stored.get("known_ids", []))
-    current_ids = set([d["id"] for d in devices])
+    current_ids = {d["id"] for d in devices}
 
     # Delete MQTT discovery for old devices.
     for old_id in known_ids - current_ids:
