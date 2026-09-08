@@ -1,6 +1,6 @@
 # The lint gate's rule set, pinned so a toolchain image rebuild cannot change
 # what `kc project lint` enforces. Mirrors the .pre-commit-config.yaml hooks:
-# ruff's defaults, isort (the repo's setup.cfg [isort] convention) and
+# ruff's defaults, isort and
 # pyupgrade; C4 keeps the one comprehension finding the first whole-tree
 # run reported.
 target-version = "py313"
