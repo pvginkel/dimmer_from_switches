@@ -14,9 +14,6 @@ tools:
   # Python 3.13 with uv, Poetry and Ruff — runs the suite and the linter.
   - use: python
 
-setup:
-  - kc project setup
-
 preamble:
   instructions: |
     This environment holds the Dimmer from Switches Home Assistant custom
