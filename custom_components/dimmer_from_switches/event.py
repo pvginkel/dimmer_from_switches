@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from homeassistant.components import mqtt
 from homeassistant.components.event import EventEntity
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.event import async_track_state_change_event
 
@@ -69,9 +70,15 @@ class ControllerEvent(EventEntity):
         self._last_type = event_type
 
         # Also publish an MQTT action payload for device triggers.
-        asyncio.create_task(mqtt.async_publish(self.hass, self._mqtt_topic, event_type, retain=False))
+        self.hass.async_create_task(self._publish_action(event_type))
 
         self.async_write_ha_state()
+
+    async def _publish_action(self, event_type: str):
+        try:
+            await mqtt.async_publish(self.hass, self._mqtt_topic, event_type, retain=False)
+        except HomeAssistantError as err:
+            _LOGGER.warning("Publishing %s for %s failed: %s", event_type, self.entity_id, err)
 
     @property
     def event_type(self) -> str | None:
