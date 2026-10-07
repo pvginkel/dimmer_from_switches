@@ -3,11 +3,14 @@ from __future__ import annotations
 import json
 
 from homeassistant.components import mqtt
-from homeassistant.const import EVENT_HOMEASSISTANT_START
+from homeassistant.const import EVENT_HOMEASSISTANT_START, Platform
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.discovery import async_load_platform
-from homeassistant.helpers.reload import async_integration_yaml_config
+from homeassistant.helpers.reload import (
+    async_get_platform_without_config_entry,
+    async_integration_yaml_config,
+)
 from homeassistant.helpers.storage import Store
 
 from .const import ACTIONS, DOMAIN, LOGGER, STORAGE_KEY, STORAGE_VERSION
@@ -38,8 +41,16 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
         LOGGER.info("Reloading Dimmer from Switches integration")
 
         config = await async_integration_yaml_config(hass, DOMAIN)
-        if config is not None:
-            await _load_devices(hass, config)
+        if config is None:
+            return
+
+        # Remove the entities, and with them their switch listeners, before
+        # loading them again.
+        platform = async_get_platform_without_config_entry(hass, DOMAIN, Platform.EVENT)
+        if platform is not None:
+            await platform.async_reset()
+
+        await _load_devices(hass, config)
 
     hass.services.async_register(DOMAIN, "reload", handle_reload_service)
 

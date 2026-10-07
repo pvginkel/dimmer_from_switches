@@ -18,7 +18,6 @@ _LOGGER = logging.getLogger(__name__)
 async def async_setup_platform(hass: HomeAssistant, config, async_add_entities, discovery_info=None):
     devices = hass.data[DOMAIN]["devices"]
     entities = []
-    binders = []
 
     for c in devices:
         ctrl = ControllerEvent(hass, c['name'], c['id'])
@@ -29,20 +28,15 @@ async def async_setup_platform(hass: HomeAssistant, config, async_add_entities, 
             await _hide(hass, c.get("up_switch"))
             await _hide(hass, c.get("down_switch"))
 
-        binder = SwitchPairBinder(
+        ctrl.binder = SwitchPairBinder(
             hass=hass,
             ctrl=ctrl,
             up=c["up_switch"],
             down=c["down_switch"],
             press_window_ms=int(c.get("press_window_ms", 500)),
         )
-        binders.append(binder)
 
     async_add_entities(entities)
-
-    # After adding entities, bind and start.
-    for b in binders:
-        await b.async_start()
 
 async def _hide(hass: HomeAssistant, entity_id: str | None):
     reg = er.async_get(hass)
@@ -61,6 +55,12 @@ class ControllerEvent(EventEntity):
         self._attr_unique_id = f"{DOMAIN}_{cid}"
         self._last_type: str | None = None
         self._mqtt_topic = f"dimmer_from_switches/{cid}/action"
+        self.binder: SwitchPairBinder | None = None
+
+    async def async_added_to_hass(self):
+        # Listen to the switches only while the entity exists, so a reload
+        # doesn't leave the old listeners behind.
+        self.async_on_remove(self.binder.async_start())
 
     @callback
     def fire(self, event_type: str):
@@ -100,9 +100,10 @@ class SwitchPairBinder:
         self.window = press_window_ms / 1000.0
         self._up = _PressState()
         self._down = _PressState()
-        self._unsub = None
 
-    async def async_start(self):
+    @callback
+    def async_start(self):
+        """Start listening to the switches; returns the callback that stops it."""
         @callback
         def _handle(evt):
             eid = evt.data["entity_id"]
@@ -128,7 +129,18 @@ class SwitchPairBinder:
                 elif eid == self.down:
                     self._end_press(self._down)
 
-        self._unsub = async_track_state_change_event(self.hass, [self.up, self.down], _handle)
+        unsub = async_track_state_change_event(self.hass, [self.up, self.down], _handle)
+
+        @callback
+        def _stop():
+            unsub()
+
+            # Don't let a pending long press fire on a removed entity.
+            for ps in (self._up, self._down):
+                if ps.task and not ps.task.done():
+                    ps.task.cancel()
+
+        return _stop
 
     def _start_press(self, ps: _PressState, long_action: str, short_action: str):
         ps.active = True
